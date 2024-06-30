@@ -1,6 +1,12 @@
+from typing import Any
+from django.db.models.query import QuerySet
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.views.generic.list import ListView
+from .models import Course 
+from django.urls import reverse_lazy 
+from django.views.generic.edit import CreateView, DeleteView, UpdateView 
 
 def logout_user(request):
     session_keys = list(request.session.keys())
@@ -10,3 +16,51 @@ def logout_user(request):
         del request.session[key]
     logout(request)
     return render(request, 'registration/logged_out.html')
+
+
+
+
+class ManageCourseListView(ListView):
+    model = Course 
+    template_name = 'courses/manage/course/list.html' 
+
+    def get_queryset(self) -> QuerySet[Any]:
+        qs = super().get_queryset()
+        return qs.filter(owner=self.request.user)
+
+
+
+
+class OwnerMixin:
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(owner=self.request.user) 
+    
+
+class OwnerEditMixin:
+    def form_valid(self, form):
+        form.istance.owner = self.request.user
+        return super().form_valid(form)
+    
+
+
+class OwnerCourseMixin(OwnerMixin):
+    model = Course 
+    fields = ['subject', 'title', 'slug', 'overview']
+    success_url = reverse_lazy('manage_cource_list') 
+
+
+class OwnerCourseEditMixin(OwnerCourseMixin, OwnerEditMixin):
+    template_name = 'courses/manage/course/form.html' 
+
+
+class CourseUpdateView(OwnerCourseEditMixin, UpdateView):
+    pass 
+
+
+class CourseCreateView(OwnerCourseEditMixin, CreateView):
+    pass 
+
+
+class CourseDeleteView(OwnerCourseMixin, DeleteView):
+    template_name = 'courses/manage/course/delete.html'
