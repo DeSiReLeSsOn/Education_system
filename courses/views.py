@@ -7,6 +7,10 @@ from django.views.generic.list import ListView
 from .models import Course 
 from django.urls import reverse_lazy 
 from django.views.generic.edit import CreateView, DeleteView, UpdateView 
+from django.contrib.auth.mixins import (
+    LoginRequiredMixin, 
+    PermissionRequiredMixin
+)
 
 def logout_user(request):
     session_keys = list(request.session.keys())
@@ -23,6 +27,8 @@ def logout_user(request):
 class ManageCourseListView(ListView):
     model = Course 
     template_name = 'courses/manage/course/list.html' 
+    permission_required = 'courses.view_course'
+
 
     def get_queryset(self) -> QuerySet[Any]:
         qs = super().get_queryset()
@@ -44,7 +50,7 @@ class OwnerEditMixin:
     
 
 
-class OwnerCourseMixin(OwnerMixin):
+class OwnerCourseMixin(OwnerMixin, LoginRequiredMixin, PermissionRequiredMixin):
     model = Course 
     fields = ['subject', 'title', 'slug', 'overview']
     success_url = reverse_lazy('manage_cource_list') 
@@ -55,12 +61,13 @@ class OwnerCourseEditMixin(OwnerCourseMixin, OwnerEditMixin):
 
 
 class CourseUpdateView(OwnerCourseEditMixin, UpdateView):
-    pass 
+    permission_required = 'courses.change_course' 
 
 
 class CourseCreateView(OwnerCourseEditMixin, CreateView):
-    pass 
+    permission_required = 'courses.add_course' 
 
 
 class CourseDeleteView(OwnerCourseMixin, DeleteView):
-    template_name = 'courses/manage/course/delete.html'
+    template_name = 'courses/manage/course/delete.html' 
+    permission_required = 'courses.delete_course'
