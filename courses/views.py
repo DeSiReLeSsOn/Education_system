@@ -22,21 +22,6 @@ def logout_user(request):
     return render(request, 'registration/logged_out.html')
 
 
-
-
-class ManageCourseListView(ListView):
-    model = Course 
-    template_name = 'courses/manage/course/list.html' 
-    permission_required = 'courses.view_course'
-
-
-    def get_queryset(self) -> QuerySet[Any]:
-        qs = super().get_queryset()
-        return qs.filter(owner=self.request.user)
-
-
-
-
 class OwnerMixin:
     def get_queryset(self):
         qs = super().get_queryset()
@@ -56,8 +41,25 @@ class OwnerCourseMixin(OwnerMixin, LoginRequiredMixin, PermissionRequiredMixin):
     success_url = reverse_lazy('manage_cource_list') 
 
 
+
+class ManageCourseListView(OwnerCourseMixin ,ListView):
+    model = Course 
+    template_name = 'manage/course/list.html' 
+    permission_required = 'courses.view_course'
+
+
+    def get_queryset(self) -> QuerySet[Any]:
+        qs = super().get_queryset()
+        return qs.filter(owner=self.request.user)
+
+
+
+
+
+
+
 class OwnerCourseEditMixin(OwnerCourseMixin, OwnerEditMixin):
-    template_name = 'courses/manage/course/form.html' 
+    template_name = 'manage/course/form.html' 
 
 
 class CourseUpdateView(OwnerCourseEditMixin, UpdateView):
@@ -69,5 +71,5 @@ class CourseCreateView(OwnerCourseEditMixin, CreateView):
 
 
 class CourseDeleteView(OwnerCourseMixin, DeleteView):
-    template_name = 'courses/manage/course/delete.html' 
+    template_name = 'manage/course/delete.html' 
     permission_required = 'courses.delete_course'
