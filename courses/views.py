@@ -30,7 +30,7 @@ class OwnerMixin:
 
 class OwnerEditMixin:
     def form_valid(self, form):
-        form.istance.owner = self.request.user
+        form.instance.owner = self.request.user
         return super().form_valid(form)
     
 
@@ -38,7 +38,7 @@ class OwnerEditMixin:
 class OwnerCourseMixin(OwnerMixin, LoginRequiredMixin, PermissionRequiredMixin):
     model = Course 
     fields = ['subject', 'title', 'slug', 'overview']
-    success_url = reverse_lazy('manage_cource_list') 
+    success_url = reverse_lazy('manage_course_list') 
 
 
 
