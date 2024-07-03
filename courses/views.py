@@ -1,16 +1,18 @@
 from typing import Any
 from django.db.models.query import QuerySet
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.views.generic.list import ListView
 from .models import Course 
 from django.urls import reverse_lazy 
 from django.views.generic.edit import CreateView, DeleteView, UpdateView 
+from django.views.generic.base import TemplateResponseMixin, View
 from django.contrib.auth.mixins import (
     LoginRequiredMixin, 
     PermissionRequiredMixin
 )
+from .forms import ModuleFormSet
 
 def logout_user(request):
     session_keys = list(request.session.keys())
@@ -72,4 +74,37 @@ class CourseCreateView(OwnerCourseEditMixin, CreateView):
 
 class CourseDeleteView(OwnerCourseMixin, DeleteView):
     template_name = 'manage/course/delete.html' 
-    permission_required = 'courses.delete_course'
+    permission_required = 'courses.delete_course' 
+
+
+class CourseModuleUpdateView(TemplateResponseMixin, View):
+    template_name = 'manage/module/formset.html'
+    course = None 
+
+
+    def get_formset(self, data=None):
+        return ModuleFormSet(instance=self.course, data=data) 
+    
+
+    def dispatch(self, request, pk):
+        self.course = get_object_or_404(
+            Course, id=pk, owner=request.user
+        )
+        return super().dispatch(request, pk)
+    
+
+    def get(self, request, *args, **kwargs):
+        formset = self.get_formset()
+        return self.render_to_response(
+            {'course': self.course, 'formset': formset}
+        )
+    
+
+    def post(self, request, *args, **kwargs):
+        formset = self.get_formset(data=request.POST)
+        if formset.is_valid():
+            formset.save()
+            return redirect('manage_course_list')
+        return self.render_to_response(
+            {'course': self.course, 'formset': formset}
+        )
