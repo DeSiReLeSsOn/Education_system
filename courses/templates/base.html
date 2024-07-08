@@ -11,12 +11,7 @@
       <a href="/" class="logo">Обучение онлайн</a>
       <ul class="menu">
         {% if request.user.is_authenticated %}
-          <li>
-            <form action="{% url "logout" %}" method="post">
-              <button type="submit">Выйти</button>
-              {% csrf_token %}
-            </form>
-          </li>
+          <li><a href="{% url "logout" %}">Выйти</a></li>        
         {% else %}
           <li><a href="{% url "login" %}">Войти</a></li>
         {% endif %}

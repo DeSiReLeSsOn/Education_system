@@ -1,10 +1,13 @@
 from typing import Any
 from django.db.models.query import QuerySet
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib import messages
+from django.contrib import messages 
+from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.views.generic.list import ListView
-from .models import Course 
+from django.forms.models import modelform_factory
+from django.apps import apps
+from .models import Course, Module, Content
 from django.urls import reverse_lazy 
 from django.views.generic.edit import CreateView, DeleteView, UpdateView 
 from django.views.generic.base import TemplateResponseMixin, View
@@ -14,15 +17,20 @@ from django.contrib.auth.mixins import (
 )
 from .forms import ModuleFormSet
 
-def logout_user(request):
-    session_keys = list(request.session.keys())
-    for key in session_keys:
-        if key == 'session_key':
-            continue
-        del request.session[key]
-    logout(request)
-    return render(request, 'registration/logged_out.html')
+# def logout_user(request):
+#     session_keys = list(request.session.keys())
+#     for key in session_keys:
+#         if key == 'session_key':
+#             continue
+#         del request.session[key]
+#     logout(request)
+#     return render(request, 'registration/logged_out.html')
 
+
+@login_required
+def user_logout(request):
+    logout(request)
+    return render(request, 'registration/logged_out.html', {})
 
 class OwnerMixin:
     def get_queryset(self):
@@ -107,4 +115,40 @@ class CourseModuleUpdateView(TemplateResponseMixin, View):
             return redirect('manage_course_list')
         return self.render_to_response(
             {'course': self.course, 'formset': formset}
-        )
+        ) 
+    
+
+
+class ContentCreateUpdateView(TemplateResponseMixin, View):
+    module = None 
+    model = None 
+    obj = None 
+    template_name = 'courses/manage/content/form.html'
+
+
+    def get_model(self, model_name):
+        if model_name in ['text', 'video', 'image', 'file']:
+            return apps.get_model(app_label='courses',
+                                  model_name=model_name) 
+        return None 
+    
+
+    def get_form(self, model, *args, **kwargs):
+        Form = modelform_factory(model, exclude=['owner', 
+                                                 'order', 
+                                                 'created', 
+                                                 'updated'])
+        return Form(*args, **kwargs)
+    
+
+    def dispatch(self, request, module_id, model_name, id=None):
+        self.module = get_object_or_404(Module, 
+                                        id=module_id,
+                                        course__owner=request.user)
+        self.model = self.get_model(model_name)
+        if id:
+            self.obj = get_object_or_404(self.model, 
+                                         id=id, 
+                                         owner=request.user)
+            return super().dispatch(request, module_id, id)
+            
