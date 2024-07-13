@@ -12,7 +12,7 @@ urlpatterns = [
     path('accounts/logout/', user_logout,
           name='logout'),
     path('admin/', admin.site.urls),
-    path('courses/', include('courses.urls')),
+    path('course/', include('courses.urls')),
 ]
 
 if settings.DEBUG:
