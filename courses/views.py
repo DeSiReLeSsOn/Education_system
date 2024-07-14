@@ -16,6 +16,7 @@ from django.contrib.auth.mixins import (
     PermissionRequiredMixin
 )
 from .forms import ModuleFormSet
+from braces.views import CsrfExemptMixin, JsonRequestResponseMixin
 
 # def logout_user(request):
 #     session_keys = list(request.session.keys())
@@ -62,11 +63,11 @@ class OwnerCourseMixin(OwnerMixin,
 
 
 class OwnerCourseEditMixin(OwnerCourseMixin, OwnerEditMixin):
-    template_name = 'courses/manage/course/form.html'
+    template_name = 'manage/course/form.html'
 
 
 class ManageCourseListView(OwnerCourseMixin, ListView):
-    template_name = 'courses/manage/course/list.html'
+    template_name = 'manage/course/list.html'
     permission_required = 'courses.view_course'
 
 
@@ -84,7 +85,7 @@ class CourseDeleteView(OwnerCourseMixin, DeleteView):
 
 
 class CourseModuleUpdateView(TemplateResponseMixin, View):
-    template_name = 'courses/manage/module/formset.html'
+    template_name = 'manage/module/formset.html'
     course = None
 
     def get_formset(self, data=None):
@@ -184,3 +185,12 @@ class ModuleContentList(TemplateResponseMixin, View):
                                    id=module_id,
                                    course__owner=request.user)
         return self.render_to_response({'module': module})
+    
+
+class ModuleOrderView(CsrfExemptMixin, JsonRequestResponseMixin, View):
+
+    def post(self, request):
+        for id, order in self.request_json.items():
+            Module.objects.filter(id=id,
+                                  course__owner=request.user).update(order=order)
+        return self.render_json_response({'saved': 'OK'})
